@@ -1,12 +1,11 @@
-// Copied from https://github.com/gchiii/esp-camera-rs/
 use std::marker::PhantomData;
-use esp_idf_hal::{
-    peripheral::Peripheral,
-    peripheral::PeripheralRef,
-    gpio::*
+
+// Copied from https://github.com/gchiii/esp-camera-rs/
+use esp_idf_hal::{gpio::*, peripheral::Peripheral, peripheral::PeripheralRef};
+use esp_idf_sys::camera::{
+    camera_fb_location_t_CAMERA_FB_IN_PSRAM, camera_grab_mode_t_CAMERA_GRAB_LATEST,
 };
-use esp_idf_sys::{camera, EspError, esp};
-use esp_idf_sys::camera::{camera_fb_location_t_CAMERA_FB_IN_DRAM, camera_fb_location_t_CAMERA_FB_IN_PSRAM, camera_grab_mode_t_CAMERA_GRAB_LATEST, camera_grab_mode_t_CAMERA_GRAB_WHEN_EMPTY};
+use esp_idf_sys::{camera, esp, EspError};
 
 pub struct FrameBuffer<'a> {
     fb: *mut camera::camera_fb_t,
@@ -48,12 +47,9 @@ impl<'a> FrameBuffer<'a> {
         let mut buffer: *mut u8 = std::ptr::null_mut();
         let mut buffer_len: usize = 0;
 
-        let converted =
-            unsafe { camera::frame2bmp(self.fb, &mut buffer, &mut buffer_len) };
+        let converted = unsafe { camera::frame2bmp(self.fb, &mut buffer, &mut buffer_len) };
         if !converted {
-            return Err(
-                EspError::from(camera::ESP_ERR_CAMERA_FAILED_TO_SET_OUT_FORMAT).unwrap(),
-            );
+            return Err(EspError::from(camera::ESP_ERR_CAMERA_FAILED_TO_SET_OUT_FORMAT).unwrap());
         }
 
         Ok(unsafe { std::slice::from_raw_parts(buffer, buffer_len) })
@@ -79,9 +75,10 @@ impl<'a> FrameBuffer<'a> {
 
 impl<'a> Drop for FrameBuffer<'a> {
     fn drop(&mut self) {
-        unsafe { camera::esp_camera_fb_return(self.fb)};
+        unsafe { camera::esp_camera_fb_return(self.fb) };
     }
 }
+
 pub struct CameraSensor<'a> {
     sensor: *mut camera::sensor_t,
     _p: PhantomData<&'a camera::sensor_t>,
@@ -279,7 +276,7 @@ impl From<u32> for GrabMode {
         match value {
             camera::camera_grab_mode_t_CAMERA_GRAB_WHEN_EMPTY => GrabMode::CameraGrabWhenEmpty,
             camera_grab_mode_t_CAMERA_GRAB_LATEST => GrabMode::CameraGrabLatest,
-            _ => GrabMode::CameraGrabWhenEmpty
+            _ => GrabMode::CameraGrabWhenEmpty,
         }
     }
 }
@@ -308,8 +305,8 @@ impl<'a> Camera<'a> {
         pin_sccb_scl: Option<PeripheralRef<'a, AnyIOPin>>,
     ) -> Result<Self, EspError> {
         esp_idf_hal::into_ref!(
-            pin_xclk, pin_d0, pin_d1, pin_d2, pin_d3, pin_d4, pin_d5, pin_d6, pin_d7,
-            pin_vsync, pin_href, pin_pclk
+            pin_xclk, pin_d0, pin_d1, pin_d2, pin_d3, pin_d4, pin_d5, pin_d6, pin_d7, pin_vsync,
+            pin_href, pin_pclk
         );
 
         let pin_pwdn = if let Some(pwdn) = pin_pwdn {

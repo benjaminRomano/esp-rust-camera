@@ -1,13 +1,11 @@
-use anyhow::Result;
 use core::str;
-use std::thread::sleep;
-use std::time::Duration;
-use esp_idf_svc::{
-    http::server::{Configuration, EspHttpServer},
-};
-use esp_idf_svc::http::{Method};
-use esp_idf_svc::io::Write;
+
+use anyhow::Result;
 use const_format::formatcp;
+use esp_idf_svc::http::server::{Configuration, EspHttpServer};
+use esp_idf_svc::http::Method;
+use esp_idf_svc::io::Write;
+
 use crate::camera;
 
 // Arbitrary boundary identifier
@@ -17,22 +15,23 @@ const STREAM_CONTENT_TYPE: &str = formatcp!("multipart/x-mixed-replace;boundary=
 const STREAM_BOUNDARY: &str = formatcp!("\r\n--{}\r\n", PART_BOUNDARY);
 
 pub fn serve(camera: camera::Camera<'static>) -> Result<EspHttpServer<'static>> {
-
     // Set the HTTP server
     let mut server = EspHttpServer::new(&Configuration::default())?;
     server.fn_handler("/stream", Method::Get, move |request| {
-        
-        let mut response =request.into_response(
-            200,
-            Some("OK"),
-            &[("Content-Type", STREAM_CONTENT_TYPE)],
-        )?;
+        let mut response =
+            request.into_response(200, Some("OK"), &[("Content-Type", STREAM_CONTENT_TYPE)])?;
 
         response.write_all(STREAM_BOUNDARY.as_bytes())?;
 
         loop {
             let jpg = camera.get_framebuffer().unwrap().data();
-            response.write_all(format!("Content-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n", jpg.len()).as_bytes())?;
+            response.write_all(
+                format!(
+                    "Content-Type: image/jpeg\r\nContent-Length: {}\r\n\r\n",
+                    jpg.len()
+                )
+                .as_bytes(),
+            )?;
             response.write_all(jpg)?;
             response.flush()?;
             response.write_all(STREAM_BOUNDARY.as_bytes())?;

@@ -1,16 +1,16 @@
-use std::thread::sleep;
-use std::time::Duration;
+use crate::wifi::wifi;
 use anyhow::{bail, Result};
 use esp_idf_hal::gpio::{IOPin, OutputPin};
 use esp_idf_hal::peripheral::Peripheral;
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_svc::eventloop::EspSystemEventLoop;
 use log::info;
-use crate::wifi::wifi;
+use std::thread::sleep;
+use std::time::Duration;
 
-mod wifi;
-mod server;
 mod camera;
+mod server;
+mod wifi;
 
 #[toml_cfg::toml_config]
 pub struct Config {
@@ -28,7 +28,12 @@ fn main() -> Result<()> {
     let sysloop = EspSystemEventLoop::take()?;
 
     // Connect to the Wi-Fi network
-    let _wifi = match wifi(CONFIG.wifi_ssid, CONFIG.wifi_psk, peripherals.modem, sysloop) {
+    let _wifi = match wifi(
+        CONFIG.wifi_ssid,
+        CONFIG.wifi_psk,
+        peripherals.modem,
+        sysloop,
+    ) {
         Ok(inner) => inner,
         Err(err) => {
             bail!("Could not connect to Wi-Fi network: {:?}", err)
